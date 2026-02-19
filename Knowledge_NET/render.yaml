@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: philosophical-connections
+    env: static
+    staticPublishPath: .
+    buildCommand: echo "static site"
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
