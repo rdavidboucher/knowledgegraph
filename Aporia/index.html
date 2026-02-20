@@ -159,6 +159,72 @@
     }
     .clear-btn:hover { color: var(--c-contradicts); border-color: var(--c-contradicts); }
 
+    /* ── MULTI-SELECT CHIPS ────────────────────────────────────────── */
+    .ms-wrap { display: flex; flex-direction: column; gap: 0.3rem; }
+    .ms-chips { display: flex; flex-wrap: wrap; gap: 0.28rem; min-height: 0; }
+    .ms-chip {
+      display: inline-flex; align-items: center; gap: 0.28rem;
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      padding: 0.18rem 0.5rem; border-radius: 2px;
+      background: var(--surface2); border: 1px solid var(--amber-lo);
+      color: var(--amber); cursor: pointer; white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .ms-chip:hover { background: #28202a; }
+    .ms-chip .rm { font-size: 0.7rem; opacity: 0.6; margin-left: 0.1rem; }
+
+    /* ── MOBILE: filter bar becomes scrollable drawer ──────────────── */
+    #filter-bar.open { max-height: min(60vh, 420px) !important; overflow-y: auto; }
+
+    /* ── MOBILE LAYOUT ─────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      header {
+        padding: 0 0.85rem;
+        gap: 0.6rem;
+        height: 50px;
+      }
+      .site-title { font-size: 1.1rem; letter-spacing: 0.12em; }
+      .stats-bar { display: none; }
+      .filter-toggle { padding: 0.4rem 0.6rem; font-size: 0.62rem; }
+      .tab-btn { padding: 0.4rem 0.7rem; font-size: 0.62rem; }
+
+      /* Filter bar stacks vertically on mobile */
+      .filter-inner { padding: 0.75rem 0.85rem; gap: 0.55rem; }
+      .filter-row { gap: 0.45rem; }
+      .fg, .fg.wide { min-width: 140px; }
+      .wt-group input[type="range"] { width: 60px; }
+
+      /* Detail panel: full-width slide-up from bottom on mobile */
+      #detail-panel {
+        top: auto !important;
+        right: 0 !important; left: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 75vh;
+        transform: translateY(100%) !important;
+        border-left: none !important;
+        border-top: 1px solid var(--border);
+        border-radius: 12px 12px 0 0;
+      }
+      #detail-panel.open { transform: translateY(0) !important; }
+
+      /* Graph controls: bigger tap targets */
+      .g-btn { padding: 0.55rem 0.85rem; font-size: 0.65rem; }
+      #graph-badge { font-size: 0.58rem; padding: 0.22rem 0.5rem; }
+
+      /* Browse: single column */
+      .cards-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+      .browse-main { padding: 0.85rem; }
+    }
+
+    @media (max-width: 400px) {
+      .site-title { font-size: 0.95rem; }
+      .filter-toggle { font-size: 0.58rem; }
+    }
+
+    /* ── TOUCH: prevent text selection on graph drag ───────────────── */
+    #graph-svg { user-select: none; -webkit-user-select: none; touch-action: none; }
+
     /* ── CONTENT PANELS ───────────────────────────────────────────── */
     /* Both panels are position:fixed, top:50px, filling the remaining
        viewport. This is the only reliable way to get full-height D3
@@ -478,25 +544,30 @@
           <label class="fg-label">Search</label>
           <input type="text" class="fg-input" id="f-search" placeholder="Text, author, concept…">
         </div>
-        <div class="fg">
+        <div class="fg ms-wrap">
           <label class="fg-label">Author</label>
-          <select class="fg-select" id="f-author"><option value="">All</option></select>
+          <select class="fg-select" id="f-author"><option value="">+ Add author</option></select>
+          <div class="ms-chips" id="chips-author"></div>
         </div>
-        <div class="fg">
+        <div class="fg ms-wrap">
           <label class="fg-label">Domain</label>
-          <select class="fg-select" id="f-domain"><option value="">All</option></select>
+          <select class="fg-select" id="f-domain"><option value="">+ Add domain</option></select>
+          <div class="ms-chips" id="chips-domain"></div>
         </div>
-        <div class="fg">
+        <div class="fg ms-wrap">
           <label class="fg-label">Emotional register</label>
-          <select class="fg-select" id="f-emotion"><option value="">All</option></select>
+          <select class="fg-select" id="f-emotion"><option value="">+ Add register</option></select>
+          <div class="ms-chips" id="chips-emotion"></div>
         </div>
-        <div class="fg">
+        <div class="fg ms-wrap">
           <label class="fg-label">Life stage</label>
-          <select class="fg-select" id="f-stage"><option value="">All</option></select>
+          <select class="fg-select" id="f-stage"><option value="">+ Add stage</option></select>
+          <div class="ms-chips" id="chips-stage"></div>
         </div>
-        <div class="fg">
+        <div class="fg ms-wrap">
           <label class="fg-label">Epistemic status</label>
-          <select class="fg-select" id="f-epistemic"><option value="">All</option></select>
+          <select class="fg-select" id="f-epistemic"><option value="">+ Add status</option></select>
+          <div class="ms-chips" id="chips-epistemic"></div>
         </div>
       </div>
       <div class="filter-row">
@@ -599,13 +670,14 @@ let ALL_NODES = [], ALL_EDGES = [];
 let nodeById  = {}, edgesByNode = {};
 
 // Single shared filter state — both views read from this
+// Multi-value filters use Sets (OR within category, AND across categories)
 const F = {
   search:    '',
-  author:    '',
-  domain:    '',
-  emotion:   '',
-  stage:     '',
-  epistemic: '',
+  authors:   new Set(),
+  domains:   new Set(),
+  emotions:  new Set(),
+  stages:    new Set(),
+  epistemics:new Set(),
   edgeTypes: new Set(EDGE_TYPES),
   minWeight: 1,
 };
@@ -659,13 +731,59 @@ Promise.all([
 
 // ── Filter Bar ─────────────────────────────────────────────────────────────
 
+// Multi-select helpers
+// selectId: the <select> element id
+// setKey:   key in F (e.g. 'authors')
+// chipsId:  the chips container id
+function setupMultiSelect(selectId, setKey, chipsId) {
+  const sel   = document.getElementById(selectId);
+  const chips = document.getElementById(chipsId);
+
+  sel.addEventListener('change', () => {
+    const val = sel.value;
+    if (!val) return;
+    sel.value = '';                    // reset dropdown immediately
+    if (F[setKey].has(val)) return;    // already selected
+    F[setKey].add(val);
+    renderChips(setKey, chipsId);
+    applyFilters();
+  });
+
+  // Also handle iOS which fires change on any touch
+  sel.addEventListener('touchend', () => {
+    setTimeout(() => {
+      const val = sel.value;
+      if (!val) return;
+      sel.value = '';
+      if (F[setKey].has(val)) return;
+      F[setKey].add(val);
+      renderChips(setKey, chipsId);
+      applyFilters();
+    }, 0);
+  });
+}
+
+function renderChips(setKey, chipsId) {
+  const chips = document.getElementById(chipsId);
+  chips.innerHTML = '';
+  F[setKey].forEach(val => {
+    const chip = document.createElement('span');
+    chip.className = 'ms-chip';
+    chip.innerHTML = `${val}<span class="rm">×</span>`;
+    chip.addEventListener('click', () => {
+      F[setKey].delete(val);
+      renderChips(setKey, chipsId);
+      applyFilters();
+    });
+    chips.appendChild(chip);
+  });
+}
+
 function setupFilterBar() {
-  // Toggle
+  // Toggle open/close
   document.getElementById('filter-toggle').addEventListener('click', () => {
-    const bar = document.getElementById('filter-bar');
-    const btn = document.getElementById('filter-toggle');
-    bar.classList.toggle('open');
-    btn.classList.toggle('active');
+    document.getElementById('filter-bar').classList.toggle('open');
+    document.getElementById('filter-toggle').classList.toggle('active');
   });
 
   // Populate selects
@@ -681,16 +799,16 @@ function setupFilterBar() {
   fillSelect('f-stage',    uniq('life_stages', true));
   fillSelect('f-epistemic',uniq('epistemic_status'));
 
-  // Listeners
+  // Wire up multi-selects
+  setupMultiSelect('f-author',   'authors',   'chips-author');
+  setupMultiSelect('f-domain',   'domains',   'chips-domain');
+  setupMultiSelect('f-emotion',  'emotions',  'chips-emotion');
+  setupMultiSelect('f-stage',    'stages',    'chips-stage');
+  setupMultiSelect('f-epistemic','epistemics','chips-epistemic');
+
+  // Search
   document.getElementById('f-search').addEventListener('input', e => {
     F.search = e.target.value.toLowerCase(); applyFilters();
-  });
-  const selectMap = { 'f-author':'author','f-domain':'domain','f-emotion':'emotion',
-                      'f-stage':'stage','f-epistemic':'epistemic' };
-  Object.entries(selectMap).forEach(([id, key]) => {
-    document.getElementById(id).addEventListener('change', e => {
-      F[key] = e.target.value; applyFilters();
-    });
   });
 
   // Edge pills
@@ -732,13 +850,19 @@ function fillSelect(id, opts) {
 }
 
 function clearFilters() {
-  F.search = ''; F.author = ''; F.domain = '';
-  F.emotion = ''; F.stage = ''; F.epistemic = '';
+  F.search = '';
+  F.authors.clear(); F.domains.clear(); F.emotions.clear();
+  F.stages.clear();  F.epistemics.clear();
   F.edgeTypes = new Set(EDGE_TYPES); F.minWeight = 1;
   document.getElementById('f-search').value = '';
-  ['f-author','f-domain','f-emotion','f-stage','f-epistemic'].forEach(id => {
-    document.getElementById(id).value = '';
+  ['author','domain','emotion','stage','epistemic'].forEach(k => {
+    document.getElementById('f-' + k).value = '';
   });
+  renderChips('authors',   'chips-author');
+  renderChips('domains',   'chips-domain');
+  renderChips('emotions',  'chips-emotion');
+  renderChips('stages',    'chips-stage');
+  renderChips('epistemics','chips-epistemic');
   document.getElementById('f-weight').value = 1;
   document.getElementById('f-weight-val').textContent = '1';
   document.querySelectorAll('.epill').forEach(p => p.classList.remove('off'));
@@ -746,7 +870,9 @@ function clearFilters() {
 }
 
 function countActiveFilters() {
-  return [F.search, F.author, F.domain, F.emotion, F.stage, F.epistemic].filter(Boolean).length
+  return (F.search ? 1 : 0)
+    + F.authors.size + F.domains.size + F.emotions.size
+    + F.stages.size  + F.epistemics.size
     + (F.edgeTypes.size < EDGE_TYPES.length ? 1 : 0)
     + (F.minWeight > 1 ? 1 : 0);
 }
@@ -754,14 +880,16 @@ function countActiveFilters() {
 // ── Core Filter Logic ──────────────────────────────────────────────────────
 
 function nodeMatches(n) {
+  // Text search
   if (F.search && !n.text.toLowerCase().includes(F.search)
                && !n.author.toLowerCase().includes(F.search)
                && !(n.notes||'').toLowerCase().includes(F.search)) return false;
-  if (F.author && n.author !== F.author) return false;
-  if (F.domain && !(n.domains||[]).includes(F.domain)) return false;
-  if (F.emotion && !(n.emotional_registers||[]).includes(F.emotion)) return false;
-  if (F.stage  && !(n.life_stages||[]).includes(F.stage)) return false;
-  if (F.epistemic && n.epistemic_status !== F.epistemic) return false;
+  // Multi-value filters: OR within category (if set is non-empty, node must match at least one)
+  if (F.authors.size   > 0 && !F.authors.has(n.author)) return false;
+  if (F.domains.size   > 0 && !(n.domains||[]).some(d => F.domains.has(d))) return false;
+  if (F.emotions.size  > 0 && !(n.emotional_registers||[]).some(e => F.emotions.has(e))) return false;
+  if (F.stages.size    > 0 && !(n.life_stages||[]).some(s => F.stages.has(s))) return false;
+  if (F.epistemics.size> 0 && !F.epistemics.has(n.epistemic_status)) return false;
   return true;
 }
 
@@ -929,11 +1057,12 @@ function updateGraph(visNodes, visEdges) {
   entered.transition().duration(300).attr('opacity',1);
 
   // Bind interactions on all current nodes
+  const isTouch = 'ontouchstart' in window;
   nodeG.selectAll('.node')
     .on('click',      (ev,d) => { ev.stopPropagation(); selectedNodeId=d.id; selectNode(d); })
-    .on('mouseover',  (ev,d) => showTip(ev,d))
-    .on('mousemove',  ev     => moveTip(ev))
-    .on('mouseout',   ()     => hideTip());
+    .on('mouseover',  isTouch ? null : (ev,d) => showTip(ev,d))
+    .on('mousemove',  isTouch ? null : ev     => moveTip(ev))
+    .on('mouseout',   isTouch ? null : ()     => hideTip());
 
   // Update simulation
   simulation.nodes(visNodes);
@@ -1111,9 +1240,12 @@ function buildLegend() {
     row.innerHTML=`<span class="leg-dot" style="background:${color}"></span>${auth}`;
     // Click legend row → set author filter
     row.addEventListener('click', ()=>{
-      const sel = document.getElementById('f-author');
-      sel.value = sel.value===auth ? '' : auth;
-      F.author = sel.value;
+      if (F.authors.has(auth)) {
+        F.authors.delete(auth);
+      } else {
+        F.authors.add(auth);
+      }
+      renderChips('authors', 'chips-author');
       // Open filter bar if closed
       document.getElementById('filter-bar').classList.add('open');
       document.getElementById('filter-toggle').classList.add('active');
