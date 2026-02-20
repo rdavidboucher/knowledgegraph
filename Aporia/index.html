@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aporia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0d0e14;
+      --surface:  #13141c;
+      --surface2: #1a1b26;
+      --border:   #252633;
+      --text:     #e8e2d6;
+      --muted:    #7a7890;
+      --amber:    #d4a853;
+      --amber-lo: #8a6c35;
+      --c-contradicts: #e05252;
+      --c-converges:   #52b788;
+      --c-extends:     #9b72cf;
+      --c-mirrors:     #4e9ebc;
+      --c-undermines:  #e89444;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      font-family: 'Lora', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── APP SHELL ─────────────────────────────────────────────────── */
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    /* ── HEADER ────────────────────────────────────────────────────── */
+    header {
+      flex-shrink: 0;
+      display: flex; align-items: center; gap: 1.5rem;
+      padding: 0 1.5rem; height: 50px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface); z-index: 20;
+    }
+    .site-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4rem; font-weight: 300;
+      letter-spacing: 0.18em; color: var(--amber);
+      text-transform: uppercase; white-space: nowrap;
+    }
+    .stats-bar {
+      display: flex; gap: 1.2rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.64rem; color: var(--muted);
+    }
+    .stats-bar span b { color: var(--text); font-weight: 400; }
+    .header-right { margin-left: auto; display: flex; align-items: center; gap: 0.7rem; }
+
+    .filter-toggle {
+      display: flex; align-items: center; gap: 0.45rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); padding: 0.33rem 0.7rem;
+      border-radius: 3px; cursor: pointer;
+      transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+    }
+    .filter-toggle:hover { color: var(--text); border-color: var(--amber-lo); }
+    .filter-toggle.active { color: var(--amber); border-color: var(--amber-lo); }
+    .ft-arrow { transition: transform 0.25s ease; display: inline-block; }
+    .filter-toggle.active .ft-arrow { transform: rotate(180deg); }
+    .filter-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 15px; height: 15px;
+      background: var(--amber); color: #0d0e14;
+      border-radius: 50%; font-size: 0.52rem; font-weight: 700;
+    }
+
+    nav.tabs {
+      display: flex; border: 1px solid var(--border);
+      border-radius: 3px; overflow: hidden;
+    }
+    .tab-btn {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.66rem; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 0.36rem 1.05rem; border: none; background: none;
+      color: var(--muted); cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab-btn + .tab-btn { border-left: 1px solid var(--border); }
+    .tab-btn.active { background: var(--surface2); color: var(--amber); }
+
+    /* ── FILTER BAR ────────────────────────────────────────────────── */
+    #filter-bar {
+      flex-shrink: 0; overflow: hidden;
+      max-height: 0; transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--surface);
+      border-bottom: 1px solid transparent; z-index: 15;
+    }
+    #filter-bar.open { max-height: 170px; border-bottom-color: var(--border); }
+
+    .filter-inner { padding: 0.85rem 1.5rem; display: flex; flex-direction: column; gap: 0.65rem; }
+
+    .filter-row { display: flex; flex-wrap: wrap; gap: 0.55rem; align-items: flex-end; }
+
+    .fg { display: flex; flex-direction: column; gap: 0.2rem; min-width: 100px; flex: 1; }
+    .fg.wide { flex: 2; min-width: 190px; }
+
+    .fg-label {
+      font-family: 'DM Mono', monospace; font-size: 0.55rem;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+    }
+    .fg-select, .fg-input {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); font-family: 'DM Mono', monospace;
+      font-size: 0.7rem; padding: 0.36rem 0.52rem;
+      border-radius: 3px; outline: none; width: 100%;
+      transition: border-color 0.15s; appearance: none;
+    }
+    .fg-select:focus, .fg-input:focus { border-color: var(--amber-lo); }
+    option { background: var(--surface2); }
+
+    /* Edge pills */
+    .edge-pills { display: flex; gap: 0.38rem; flex-wrap: wrap; align-items: center; }
+    .epill {
+      display: flex; align-items: center; gap: 0.32rem;
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      padding: 0.28rem 0.6rem; border-radius: 3px;
+      border: 1px solid var(--border); background: none;
+      color: var(--text); cursor: pointer;
+      transition: opacity 0.15s; white-space: nowrap;
+    }
+    .epill.off { opacity: 0.28; color: var(--muted); }
+    .epill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .epill-ct { font-size: 0.55rem; color: var(--muted); }
+
+    /* Weight slider */
+    .wt-group {
+      display: flex; align-items: center; gap: 0.55rem;
+      font-family: 'DM Mono', monospace; font-size: 0.62rem;
+      color: var(--muted); white-space: nowrap;
+    }
+    .wt-group input[type="range"] { width: 80px; accent-color: var(--amber); cursor: pointer; }
+    .wt-val { color: var(--amber); min-width: 0.8rem; }
+
+    .clear-btn {
+      font-family: 'DM Mono', monospace; font-size: 0.6rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: none; border: 1px solid var(--border);
+      color: var(--muted); padding: 0.3rem 0.62rem;
+      border-radius: 3px; cursor: pointer; white-space: nowrap;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .clear-btn:hover { color: var(--c-contradicts); border-color: var(--c-contradicts); }
+
+    /* ── VIEWS ─────────────────────────────────────────────────────── */
+    .views { flex: 1; overflow: hidden; position: relative; }
+    .tab-panel { position: absolute; inset: 0; display: none; }
+    .tab-panel.active { display: flex; }
+
+    /* ── GRAPH TAB ─────────────────────────────────────────────────── */
+    #tab-graph { position: relative; }
+    #graph-svg { width: 100%; height: 100%; cursor: grab; }
+    #graph-svg:active { cursor: grabbing; }
+
+    #graph-badge {
+      position: absolute; top: 1rem; right: 1rem;
+      font-family: 'DM Mono', monospace; font-size: 0.63rem;
+      color: var(--muted); background: rgba(13,14,20,0.85);
+      border: 1px solid var(--border); padding: 0.28rem 0.6rem;
+      border-radius: 3px; backdrop-filter: blur(6px); z-index: 5;
+    }
+
+    .g-bottom {
+      position: absolute; bottom: 1rem; left: 1rem;
+      display: flex; gap: 0.45rem; z-index: 5;
+    }
+    .g-btn {
+      font-family: 'DM Mono', monospace; font-size: 0.61rem;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      background: rgba(13,14,20,0.88); border: 1px solid var(--border);
+      color: var(--muted); padding: 0.34rem 0.7rem;
+      border-radius: 3px; cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .g-btn:hover { color: var(--amber); border-color: var(--amber-lo); }
+
+    /* Author legend */
+    #author-legend {
+      position: absolute; bottom: 1rem; right: 1rem;
+      background: rgba(13,14,20,0.93); border: 1px solid var(--border);
+      border-radius: 4px; padding: 0.72rem 0.9rem;
+      backdrop-filter: blur(8px); max-height: 280px;
+      overflow-y: auto; z-index: 5; display: none;
+    }
+    #author-legend.open { display: block; }
+    .leg-title {
+      font-family: 'DM Mono', monospace; font-size: 0.56rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.55rem;
+    }
+    .leg-row {
+      display: flex; align-items: center; gap: 0.42rem;
+      font-family: 'DM Mono', monospace; font-size: 0.61rem;
+      color: var(--muted); margin-bottom: 0.25rem; cursor: pointer;
+    }
+    .leg-row:hover { color: var(--text); }
+    .leg-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* D3 nodes & links */
+    .node { cursor: pointer; }
+    .node circle { transition: r 0.2s, filter 0.15s; }
+    .node.faded circle { opacity: 0.07; }
+    .node.faded text { opacity: 0; }
+    .node.selected circle {
+      stroke: var(--amber) !important;
+      stroke-width: 2.5px !important;
+      stroke-opacity: 1 !important;
+      filter: drop-shadow(0 0 6px var(--amber));
+    }
+    .node text {
+      font-family: 'DM Mono', monospace; font-size: 7px;
+      fill: var(--muted); pointer-events: none; text-anchor: middle;
+    }
+    .link { stroke-opacity: 0.42; }
+    .link.faded { stroke-opacity: 0.04; }
+    .link.lit { stroke-opacity: 0.92; }
+
+    /* Pulse animation for browse→graph navigation */
+    @keyframes pulse-glow {
+      0%   { stroke: var(--amber); stroke-width: 2px; stroke-opacity: 1; r: 0; }
+      100% { stroke: var(--amber); stroke-width: 0px; stroke-opacity: 0; r: 22px; }
+    }
+    .pulse-ring {
+      pointer-events: none;
+      fill: none;
+      animation: pulse-glow 0.9s ease-out forwards;
+    }
+
+    /* ── TOOLTIP ───────────────────────────────────────────────────── */
+    #tooltip {
+      position: fixed; pointer-events: none;
+      z-index: 100; opacity: 0;
+      transition: opacity 0.1s;
+      max-width: 270px;
+    }
+    #tooltip.show { opacity: 1; }
+    .tt-box {
+      background: rgba(10,11,18,0.97);
+      border: 1px solid var(--border);
+      border-radius: 4px; padding: 0.75rem 0.9rem;
+      backdrop-filter: blur(12px);
+    }
+    .tt-author {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem; margin-bottom: 0.08rem;
+    }
+    .tt-meta {
+      display: flex; gap: 0.8rem;
+      font-family: 'DM Mono', monospace;
+      font-size: 0.57rem; color: var(--muted); margin-bottom: 0.55rem;
+    }
+    .tt-text {
+      font-family: 'Lora', serif; font-size: 0.78rem;
+      line-height: 1.52; color: #b0aaa0; font-style: italic;
+    }
+
+    /* ── DETAIL PANEL ──────────────────────────────────────────────── */
+    #detail-panel {
+      position: absolute; right: 0; top: 0; bottom: 0; width: 348px;
+      background: var(--surface); border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10;
+    }
+    #detail-panel.open { transform: translateX(0); }
+
+    .dp-head {
+      flex-shrink: 0; display: flex; align-items: flex-start;
+      justify-content: space-between; padding: 1rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dp-author { font-family: 'Cormorant Garamond', serif; font-size: 1.15rem; }
+    .dp-source { font-family: 'DM Mono', monospace; font-size: 0.61rem; color: var(--muted); margin-top: 0.08rem; }
+    .dp-id { font-family: 'DM Mono', monospace; font-size: 0.56rem; color: #383950; margin-top: 0.12rem; }
+    .dp-close {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; font-size: 1.15rem; line-height: 1;
+      transition: color 0.15s;
+    }
+    .dp-close:hover { color: var(--text); }
+
+    .dp-body { flex: 1; overflow-y: auto; padding: 1.1rem; }
+    .dp-text {
+      font-family: 'Lora', serif; font-size: 0.9rem;
+      line-height: 1.72; font-style: italic; margin-bottom: 1rem;
+    }
+    .dp-tags { display: flex; flex-wrap: wrap; gap: 0.28rem; margin-bottom: 1rem; }
+    .dtag {
+      font-family: 'DM Mono', monospace; font-size: 0.57rem;
+      padding: 0.16rem 0.46rem; border-radius: 2px;
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .dtag.domain  { border-color: #1e3560; color: #6898d0; }
+    .dtag.emotion { border-color: #481e3e; color: #c075a8; }
+    .dtag.stage   { border-color: #133625; color: #4db07a; }
+    .dtag.ep      { border-color: var(--amber-lo); color: var(--amber); }
+
+    .dp-notes {
+      font-family: 'Lora', serif; font-size: 0.78rem;
+      color: var(--muted); line-height: 1.55; font-style: italic;
+      padding: 0.68rem 0.78rem; background: var(--surface2);
+      border-radius: 3px; margin-bottom: 1rem;
+    }
+    .dp-conn-head {
+      font-family: 'DM Mono', monospace; font-size: 0.57rem;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 0.58rem;
+    }
+    .conn-list { display: flex; flex-direction: column; gap: 0.32rem; }
+    .conn-item {
+      display: flex; gap: 0.52rem; align-items: flex-start;
+      padding: 0.48rem 0.62rem; background: var(--surface2);
+      border-radius: 3px; cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .conn-item:hover { background: #1d1e2e; border-color: var(--border); }
+    .conn-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .conn-body { flex: 1; min-width: 0; }
+    .conn-meta {
+      font-family: 'DM Mono', monospace; font-size: 0.57rem;
+      color: var(--muted); margin-bottom: 0.14rem;
+    }
+    .conn-text {
+      font-family: 'Lora', serif; font-size: 0.75rem;
+      color: var(--muted); line-height: 1.42;
+    }
+    .conn-label {
+      font-family: 'DM Mono', monospace; font-size: 0.54rem;
+      color: #424358; margin-top: 0.14rem; font-style: italic;
+    }
+
+    /* ── BROWSE ────────────────────────────────────────────────────── */
+    #tab-browse { flex-direction: column; }
+    .browse-main { flex: 1; overflow-y: auto; padding: 1.2rem 1.5rem; }
+    .b-count {
+      font-family: 'DM Mono', monospace; font-size: 0.63rem;
+      color: var(--muted); margin-bottom: 1rem;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(348px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 4px; padding: 1.15rem 1.25rem;
+      cursor: pointer; transition: border-color 0.18s, background 0.18s;
+    }
+    .card:hover { border-color: var(--amber-lo); background: #14151f; }
+    .card.highlighted {
+      border-color: var(--amber) !important;
+      background: #18192a !important;
+      box-shadow: 0 0 0 1px var(--amber-lo);
+    }
+    .card-id {
+      font-family: 'DM Mono', monospace; font-size: 0.55rem;
+      color: #35364a; margin-bottom: 0.42rem;
+    }
+    .card-top {
+      display: flex; justify-content: space-between;
+      align-items: baseline; margin-bottom: 0.72rem;
+    }
+    .card-author { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; }
+    .card-source { font-family: 'DM Mono', monospace; font-size: 0.61rem; color: var(--muted); }
+    .card-text {
+      font-family: 'Lora', serif; font-size: 0.87rem;
+      line-height: 1.65; margin-bottom: 0.88rem;
+    }
+    .card-tags { display: flex; flex-wrap: wrap; gap: 0.27rem; margin-bottom: 0.78rem; }
+    .btag {
+      font-family: 'DM Mono', monospace; font-size: 0.56rem;
+      padding: 0.14rem 0.44rem; border-radius: 2px;
+      border: 1px solid var(--border); color: var(--muted);
+    }
+    .btag.domain  { border-color: #1e3560; color: #6898d0; }
+    .btag.emotion { border-color: #481e3e; color: #c075a8; }
+    .btag.stage   { border-color: #133625; color: #4db07a; }
+    .btag.ep      { border-color: var(--amber-lo); color: var(--amber); }
+    .card-notes {
+      font-family: 'Lora', serif; font-size: 0.74rem; color: var(--muted);
+      font-style: italic; line-height: 1.5;
+      border-top: 1px solid var(--border); padding-top: 0.68rem;
+    }
+
+    /* ── LOADING ───────────────────────────────────────────────────── */
+    #loading {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: var(--bg); z-index: 200; gap: 0.75rem;
+    }
+    .l-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.2rem; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--amber);
+    }
+    .l-sub { font-family: 'DM Mono', monospace; font-size: 0.66rem; color: var(--muted); }
+    .l-err {
+      font-family: 'DM Mono', monospace; font-size: 0.72rem;
+      color: var(--c-contradicts); text-align: center;
+      max-width: 380px; line-height: 1.7;
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="l-title">Aporia</div>
+  <div class="l-sub">Loading graph data…</div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <header>
+    <span class="site-title">Aporia</span>
+    <div class="stats-bar">
+      <span id="s-nodes"><b>—</b> nodes</span>
+      <span id="s-edges"><b>—</b> edges</span>
+      <span id="s-thinkers"><b>—</b> thinkers</span>
+    </div>
+    <div class="header-right">
+      <button class="filter-toggle" id="filter-toggle">
+        Filters <span class="ft-arrow">▾</span>
+        <span class="filter-badge" id="filter-badge" style="display:none;"></span>
+      </button>
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="graph">Graph</button>
+        <button class="tab-btn" data-tab="browse">Browse</button>
+      </nav>
+    </div>
+  </header>
+
+  <div id="filter-bar">
+    <div class="filter-inner">
+      <!-- Row 1: text / attribute selects -->
+      <div class="filter-row">
+        <div class="fg wide">
+          <label class="fg-label">Search</label>
+          <input type="text" class="fg-input" id="f-search" placeholder="Text, author, concept…">
+        </div>
+        <div class="fg">
+          <label class="fg-label">Author</label>
+          <select class="fg-select" id="f-author"><option value="">All</option></select>
+        </div>
+        <div class="fg">
+          <label class="fg-label">Domain</label>
+          <select class="fg-select" id="f-domain"><option value="">All</option></select>
+        </div>
+        <div class="fg">
+          <label class="fg-label">Emotional register</label>
+          <select class="fg-select" id="f-emotion"><option value="">All</option></select>
+        </div>
+        <div class="fg">
+          <label class="fg-label">Life stage</label>
+          <select class="fg-select" id="f-stage"><option value="">All</option></select>
+        </div>
+        <div class="fg">
+          <label class="fg-label">Epistemic status</label>
+          <select class="fg-select" id="f-epistemic"><option value="">All</option></select>
+        </div>
+      </div>
+      <!-- Row 2: edge types / weight / clear -->
+      <div class="filter-row">
+        <span class="fg-label" style="align-self:center; white-space:nowrap;">Edge types</span>
+        <div class="edge-pills" id="edge-pills"></div>
+        <div class="wt-group">
+          <span>Weight ≥</span>
+          <input type="range" id="f-weight" min="1" max="3" step="1" value="1">
+          <span class="wt-val" id="f-weight-val">1</span>
+        </div>
+        <button class="clear-btn" id="clear-btn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="views">
+
+    <!-- GRAPH -->
+    <div class="tab-panel active" id="tab-graph">
+      <svg id="graph-svg"></svg>
+      <div id="graph-badge"></div>
+      <div class="g-bottom">
+        <button class="g-btn" id="btn-reset">↺ Reset</button>
+        <button class="g-btn" id="btn-legend">Authors</button>
+      </div>
+      <div id="author-legend"></div>
+      <div id="detail-panel">
+        <div class="dp-head">
+          <div>
+            <div class="dp-author" id="dp-author">—</div>
+            <div class="dp-source" id="dp-source">—</div>
+            <div class="dp-id"    id="dp-id">—</div>
+          </div>
+          <button class="dp-close" id="dp-close">×</button>
+        </div>
+        <div class="dp-body">
+          <div class="dp-text"  id="dp-text"></div>
+          <div class="dp-tags"  id="dp-tags"></div>
+          <div class="dp-notes" id="dp-notes" style="display:none;"></div>
+          <div class="dp-conn-head">Connections</div>
+          <div class="conn-list" id="conn-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BROWSE -->
+    <div class="tab-panel" id="tab-browse">
+      <div class="browse-main">
+        <div class="b-count" id="b-count"></div>
+        <div class="cards-grid" id="b-grid"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tooltip">
+  <div class="tt-box">
+    <div class="tt-author" id="tt-author"></div>
+    <div class="tt-meta">
+      <span id="tt-id"></span><span id="tt-ec"></span>
+    </div>
+    <div class="tt-text" id="tt-text"></div>
+  </div>
+</div>
+
+<script>
+// ── Constants ──────────────────────────────────────────────────────────────
+
+const AUTHOR_COLORS = {
+  'Adam Smith':          '#C4956A',
+  'Albert Camus':        '#5B9BD5',
+  'Aristotle':           '#D4AF37',
+  'Atul Gawande':        '#7BAFBC',
+  'Bill Bryson':         '#78C7A8',
+  'Blaise Pascal':       '#C285A0',
+  'Boethius':            '#7B9E5E',
+  'Charles Darwin':      '#8DB87A',
+  'Ernest Becker':       '#D4813A',
+  'Friedrich Nietzsche': '#8B85D4',
+  'Fyodor Dostoevsky':   '#C75757',
+  'Henry Thoreau':       '#5B9B6B',
+  'Laozi':               '#6BBFB8',
+  'Marcus Aurelius':     '#D4C15A',
+  'Michel de Montaigne': '#B89060',
+  'Simone Weil':         '#9B7EC8',
+  'Soren Kierkegaard':   '#4E7BC4',
+  'Viktor Frankl':       '#6BA5D4',
+  'Vyasa (trad.)':       '#E8A53A',
+};
+
+const EDGE_COLORS = {
+  contradicts: '#e05252',
+  converges:   '#52b788',
+  extends:     '#9b72cf',
+  mirrors:     '#4e9ebc',
+  undermines:  '#e89444',
+};
+
+const EDGE_TYPES = ['contradicts','converges','extends','mirrors','undermines'];
+
+// ── State ──────────────────────────────────────────────────────────────────
+
+let ALL_NODES = [], ALL_EDGES = [];
+let nodeById  = {}, edgesByNode = {};
+
+// Single shared filter state — both views read from this
+const F = {
+  search:    '',
+  author:    '',
+  domain:    '',
+  emotion:   '',
+  stage:     '',
+  epistemic: '',
+  edgeTypes: new Set(EDGE_TYPES),
+  minWeight: 1,
+};
+
+let selectedNodeId  = null;   // node currently focused (shared)
+let pendingNodeId   = null;   // set by browse click, consumed on graph tab open
+
+let simulation, svgSel, linkG, nodeG, zoomBeh;
+let graphW = 0, graphH = 0;
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+
+Promise.all([
+  fetch('./data/nodes.json').then(r => r.json()),
+  fetch('./data/edges.json').then(r => r.json()),
+]).then(([nodes, edges]) => {
+  ALL_NODES = nodes;
+  ALL_EDGES = edges;
+
+  nodeById = {};
+  ALL_NODES.forEach(n => { n._deg = 0; nodeById[n.id] = n; });
+
+  edgesByNode = {};
+  ALL_EDGES.forEach(e => {
+    [e.source, e.target].forEach(id => {
+      if (!edgesByNode[id]) edgesByNode[id] = [];
+      edgesByNode[id].push(e);
+      nodeById[id] && nodeById[id]._deg++;
+    });
+  });
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+
+  document.querySelector('#s-nodes b').textContent    = ALL_NODES.length;
+  document.querySelector('#s-edges b').textContent    = ALL_EDGES.length;
+  document.querySelector('#s-thinkers b').textContent = Object.keys(AUTHOR_COLORS).length;
+
+  setupFilterBar();
+  setupTabs();
+  setupGraph();
+  buildLegend();
+
+  // Defer the first render by one animation frame so the browser has
+  // completed flex layout and the SVG has its true dimensions.
+  requestAnimationFrame(() => {
+    measureGraph();
+    simulation.force('center', d3.forceCenter(graphW/2, graphH/2).strength(0.06));
+    applyFilters();
+  });
+
+}).catch(() => {
+  document.querySelector('#loading .l-sub').innerHTML =
+    `<div class="l-err">Cannot load data files.<br>
+    Run a local server: <code>python3 -m http.server 8000</code><br>
+    then open <code>http://localhost:8000</code></div>`;
+});
+
+// ── Filter Bar ─────────────────────────────────────────────────────────────
+
+function setupFilterBar() {
+  // Toggle
+  document.getElementById('filter-toggle').addEventListener('click', () => {
+    const bar = document.getElementById('filter-bar');
+    const btn = document.getElementById('filter-toggle');
+    bar.classList.toggle('open');
+    btn.classList.toggle('active');
+  });
+
+  // Populate selects
+  const uniq = (key, flat) => {
+    const arr = flat
+      ? [...new Set(ALL_NODES.flatMap(n => n[key] || []))]
+      : [...new Set(ALL_NODES.map(n => n[key]).filter(Boolean))];
+    return arr.sort();
+  };
+  fillSelect('f-author',   uniq('author'));
+  fillSelect('f-domain',   uniq('domains', true));
+  fillSelect('f-emotion',  uniq('emotional_registers', true));
+  fillSelect('f-stage',    uniq('life_stages', true));
+  fillSelect('f-epistemic',uniq('epistemic_status'));
+
+  // Listeners
+  document.getElementById('f-search').addEventListener('input', e => {
+    F.search = e.target.value.toLowerCase(); applyFilters();
+  });
+  const selectMap = { 'f-author':'author','f-domain':'domain','f-emotion':'emotion',
+                      'f-stage':'stage','f-epistemic':'epistemic' };
+  Object.entries(selectMap).forEach(([id, key]) => {
+    document.getElementById(id).addEventListener('change', e => {
+      F[key] = e.target.value; applyFilters();
+    });
+  });
+
+  // Edge pills
+  const ec = {};
+  ALL_EDGES.forEach(e => { ec[e.type] = (ec[e.type]||0)+1; });
+  const pillsEl = document.getElementById('edge-pills');
+  EDGE_TYPES.forEach(type => {
+    const btn = document.createElement('button');
+    btn.className = 'epill'; btn.dataset.type = type;
+    btn.innerHTML = `<span class="epill-dot" style="background:${EDGE_COLORS[type]}"></span>`
+                  + `${type} <span class="epill-ct">${ec[type]||0}</span>`;
+    btn.addEventListener('click', () => {
+      if (F.edgeTypes.has(type)) F.edgeTypes.delete(type);
+      else F.edgeTypes.add(type);
+      btn.classList.toggle('off', !F.edgeTypes.has(type));
+      applyFilters();
+    });
+    pillsEl.appendChild(btn);
+  });
+
+  // Weight
+  document.getElementById('f-weight').addEventListener('input', e => {
+    F.minWeight = +e.target.value;
+    document.getElementById('f-weight-val').textContent = F.minWeight;
+    applyFilters();
+  });
+
+  // Clear
+  document.getElementById('clear-btn').addEventListener('click', clearFilters);
+}
+
+function fillSelect(id, opts) {
+  const sel = document.getElementById(id);
+  opts.forEach(o => {
+    const opt = document.createElement('option');
+    opt.value = o; opt.textContent = o;
+    sel.appendChild(opt);
+  });
+}
+
+function clearFilters() {
+  F.search = ''; F.author = ''; F.domain = '';
+  F.emotion = ''; F.stage = ''; F.epistemic = '';
+  F.edgeTypes = new Set(EDGE_TYPES); F.minWeight = 1;
+  document.getElementById('f-search').value = '';
+  ['f-author','f-domain','f-emotion','f-stage','f-epistemic'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('f-weight').value = 1;
+  document.getElementById('f-weight-val').textContent = '1';
+  document.querySelectorAll('.epill').forEach(p => p.classList.remove('off'));
+  applyFilters();
+}
+
+function countActiveFilters() {
+  return [F.search, F.author, F.domain, F.emotion, F.stage, F.epistemic].filter(Boolean).length
+    + (F.edgeTypes.size < EDGE_TYPES.length ? 1 : 0)
+    + (F.minWeight > 1 ? 1 : 0);
+}
+
+// ── Core Filter Logic ──────────────────────────────────────────────────────
+
+function nodeMatches(n) {
+  if (F.search && !n.text.toLowerCase().includes(F.search)
+               && !n.author.toLowerCase().includes(F.search)
+               && !(n.notes||'').toLowerCase().includes(F.search)) return false;
+  if (F.author && n.author !== F.author) return false;
+  if (F.domain && !(n.domains||[]).includes(F.domain)) return false;
+  if (F.emotion && !(n.emotional_registers||[]).includes(F.emotion)) return false;
+  if (F.stage  && !(n.life_stages||[]).includes(F.stage)) return false;
+  if (F.epistemic && n.epistemic_status !== F.epistemic) return false;
+  return true;
+}
+
+function edgeMatches(e) {
+  return F.edgeTypes.has(e.type) && e.weight >= F.minWeight;
+}
+
+function applyFilters() {
+  // Update badge
+  const n = countActiveFilters();
+  const badge = document.getElementById('filter-badge');
+  badge.style.display = n > 0 ? 'inline-flex' : 'none';
+  badge.textContent = n;
+
+  const visNodes = ALL_NODES.filter(nodeMatches);
+  const visIds   = new Set(visNodes.map(nd => nd.id));
+  const visEdges = ALL_EDGES.filter(e => {
+    const s = rawId(e.source), t = rawId(e.target);
+    return edgeMatches(e) && visIds.has(s) && visIds.has(t);
+  });
+
+  updateGraph(visNodes, visEdges);
+  renderBrowse(visNodes);
+}
+
+const rawId = x => (typeof x === 'object' ? x.id : x);
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+
+function setupTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+      if (btn.dataset.tab === 'graph' && pendingNodeId) {
+        const nid = pendingNodeId;
+        pendingNodeId = null;
+        const node = nodeById[nid];
+        if (node) {
+          selectedNodeId = nid;
+          openDetail(node);
+          applyFocus();
+          // Pan + pulse after simulation has had a tick
+          setTimeout(() => { panTo(nid); pulseNode(nid); }, 120);
+        }
+      }
+    });
+  });
+}
+
+// ── Graph ──────────────────────────────────────────────────────────────────
+
+function measureGraph() {
+  // Measure the SVG's true rendered size. Falls back to viewport minus header
+  // (50px) if the element reports zero because the tab is display:none at boot.
+  const svg = document.getElementById('graph-svg');
+  const rect = svg.getBoundingClientRect();
+  graphW = rect.width  || svg.clientWidth  || window.innerWidth;
+  graphH = rect.height || svg.clientHeight || (window.innerHeight - 50);
+}
+
+function setupGraph() {
+  svgSel = d3.select('#graph-svg');
+  const root = svgSel.append('g').attr('id', 'g-root');
+  linkG = root.append('g');
+  nodeG = root.append('g');
+
+  measureGraph();
+
+  zoomBeh = d3.zoom().scaleExtent([0.04, 6]).on('zoom', e => {
+    root.attr('transform', e.transform);
+  });
+  svgSel.call(zoomBeh);
+
+  // Click on empty canvas closes detail
+  svgSel.on('click', ev => {
+    if (ev.target === svgSel.node() || ev.target.tagName === 'svg') closeDetail();
+  });
+
+  simulation = d3.forceSimulation()
+    .force('charge', d3.forceManyBody().strength(d => -80 - d._deg * 7))
+    .force('center',  d3.forceCenter(graphW/2, graphH/2).strength(0.06))
+    .force('collide', d3.forceCollide().radius(d => rOf(d) + 3))
+    .alphaDecay(0.022).velocityDecay(0.40)
+    .on('tick', () => {
+      linkG.selectAll('.link')
+        .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+      nodeG.selectAll('.node')
+        .attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+
+  document.getElementById('btn-reset').addEventListener('click', resetView);
+  document.getElementById('dp-close').addEventListener('click', closeDetail);
+  document.getElementById('btn-legend').addEventListener('click', () => {
+    document.getElementById('author-legend').classList.toggle('open');
+  });
+
+  // Keep dimensions live on resize — re-center the simulation.
+  const ro = new ResizeObserver(() => {
+    const prevW = graphW, prevH = graphH;
+    measureGraph();
+    if (graphW !== prevW || graphH !== prevH) {
+      simulation.force('center', d3.forceCenter(graphW/2, graphH/2).strength(0.06));
+      simulation.alpha(0.15).restart();
+    }
+  });
+  ro.observe(document.getElementById('graph-svg'));
+}
+
+const rOf = d => 3.2 + Math.sqrt(d._deg||0) * 1.25;
+
+function updateGraph(visNodes, visEdges) {
+  if (!simulation) return;
+
+  // Seed positions for first-time nodes
+  visNodes.forEach(n => {
+    if (n.x == null) {
+      n.x = graphW/2 + (Math.random()-.5)*180;
+      n.y = graphH/2 + (Math.random()-.5)*180;
+    }
+  });
+
+  // ── Links ──
+  const lsel = linkG.selectAll('.link').data(visEdges, d => d.id);
+  lsel.exit().transition().duration(180).attr('stroke-opacity',0).remove();
+  lsel.enter().append('line')
+    .attr('class','link')
+    .attr('stroke', d => EDGE_COLORS[d.type])
+    .attr('stroke-width', d => d.weight===3?1.6:d.weight===2?1.1:0.6)
+    .attr('stroke-opacity',0)
+    .transition().duration(300).attr('stroke-opacity', 0.42);
+
+  // ── Nodes ──
+  const nsel = nodeG.selectAll('.node').data(visNodes, d => d.id);
+
+  nsel.exit().transition().duration(180).attr('opacity',0).remove();
+
+  const entered = nsel.enter().append('g')
+    .attr('class','node')
+    .attr('transform', d => `translate(${d.x},${d.y})`)
+    .attr('opacity',0)
+    .call(d3.drag()
+      .on('start', (ev,d)=>{ if(!ev.active) simulation.alphaTarget(0.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (ev,d)=>{ d.fx=ev.x; d.fy=ev.y; })
+      .on('end',   (ev,d)=>{ if(!ev.active) simulation.alphaTarget(0); d.fx=null; d.fy=null; })
+    );
+
+  entered.append('circle')
+    .attr('r', d => rOf(d))
+    .attr('fill',   d => AUTHOR_COLORS[d.author]||'#888')
+    .attr('stroke', d => AUTHOR_COLORS[d.author]||'#888')
+    .attr('stroke-width', 0.8).attr('stroke-opacity', 0.32);
+
+  entered.append('text')
+    .attr('dy', d => rOf(d)+9)
+    .text(d => d._deg >= 10 ? d.author.split(' ').pop() : '');
+
+  entered.transition().duration(300).attr('opacity',1);
+
+  // Bind interactions on all current nodes
+  nodeG.selectAll('.node')
+    .on('click',      (ev,d) => { ev.stopPropagation(); selectedNodeId=d.id; selectNode(d); })
+    .on('mouseover',  (ev,d) => showTip(ev,d))
+    .on('mousemove',  ev     => moveTip(ev))
+    .on('mouseout',   ()     => hideTip());
+
+  // Update simulation
+  simulation.nodes(visNodes);
+  simulation.force('link',
+    d3.forceLink(visEdges).id(d=>d.id)
+      .distance(d => 52 + (3-d.weight)*28)
+      .strength(d => 0.1 + d.weight*0.05)
+  );
+  simulation.alpha(0.38).restart();
+
+  // Badge
+  document.getElementById('graph-badge').textContent =
+    `${visNodes.length} nodes · ${visEdges.length} edges`;
+
+  applyFocus();
+}
+
+function applyFocus() {
+  const ns = nodeG.selectAll('.node');
+  const ls = linkG.selectAll('.link');
+  if (!selectedNodeId) {
+    ns.classed('faded',false).classed('selected',false);
+    ls.classed('faded',false).classed('lit',false);
+    return;
+  }
+  const neighbors = new Set([selectedNodeId]);
+  ls.each(d => {
+    const s=rawId(d.source), t=rawId(d.target);
+    if(s===selectedNodeId) neighbors.add(t);
+    if(t===selectedNodeId) neighbors.add(s);
+  });
+  ns.classed('faded', d => !neighbors.has(d.id))
+    .classed('selected', d => d.id===selectedNodeId);
+  ls.each(function(d){
+    const s=rawId(d.source), t=rawId(d.target);
+    const conn = s===selectedNodeId||t===selectedNodeId;
+    d3.select(this).classed('lit',conn).classed('faded',!conn);
+  });
+}
+
+function selectNode(d) {
+  openDetail(d);
+  applyFocus();
+}
+
+function closeDetail() {
+  document.getElementById('detail-panel').classList.remove('open');
+  selectedNodeId = null;
+  applyFocus();
+}
+
+function openDetail(d) {
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('dp-author').textContent = d.author;
+  document.getElementById('dp-source').textContent = d.source;
+  document.getElementById('dp-id').textContent     = d.id;
+  document.getElementById('dp-text').textContent   = d.text;
+
+  const tagsEl = document.getElementById('dp-tags');
+  tagsEl.innerHTML = '';
+  if (d.epistemic_status)
+    tagsEl.innerHTML += `<span class="dtag ep">${d.epistemic_status.replace(/_/g,' ')}</span>`;
+  (d.domains||[]).forEach(t => tagsEl.innerHTML += `<span class="dtag domain">${t}</span>`);
+  (d.emotional_registers||[]).forEach(t => tagsEl.innerHTML += `<span class="dtag emotion">${t}</span>`);
+  (d.life_stages||[]).forEach(t => tagsEl.innerHTML += `<span class="dtag stage">${t}</span>`);
+
+  const notesEl = document.getElementById('dp-notes');
+  if (d.notes) { notesEl.textContent=d.notes; notesEl.style.display='block'; }
+  else notesEl.style.display='none';
+
+  const connEl = document.getElementById('conn-list');
+  connEl.innerHTML = '';
+  const edges = (edgesByNode[d.id]||[]).slice()
+    .sort((a,b)=>b.weight-a.weight||a.type.localeCompare(b.type));
+
+  edges.forEach(edge => {
+    const otherId = rawId(edge.source)===d.id ? rawId(edge.target) : rawId(edge.source);
+    const other   = nodeById[otherId];
+    if (!other) return;
+    const item = document.createElement('div');
+    item.className = 'conn-item';
+    item.innerHTML = `
+      <span class="conn-dot" style="background:${EDGE_COLORS[edge.type]}"></span>
+      <div class="conn-body">
+        <div class="conn-meta">${otherId} · ${edge.type} w${edge.weight}</div>
+        <div class="conn-text">${other.text.slice(0,105)}…</div>
+        <div class="conn-label">${edge.label}</div>
+      </div>`;
+    item.addEventListener('click', () => {
+      selectedNodeId = otherId;
+      openDetail(other);
+      applyFocus();
+      panTo(otherId);
+    });
+    connEl.appendChild(item);
+  });
+
+  if (!edges.length) connEl.innerHTML =
+    `<div style="font-family:'DM Mono',monospace;font-size:0.63rem;color:var(--muted);">No connections visible in current filter.</div>`;
+}
+
+function panTo(nodeId) {
+  const n = nodeById[nodeId];
+  if (!n || n.x==null) return;
+  const scale = 1.7;
+  svgSel.transition().duration(700).call(
+    zoomBeh.transform,
+    d3.zoomIdentity
+      .translate(graphW/2, graphH/2)
+      .scale(scale)
+      .translate(-n.x, -n.y)
+  );
+}
+
+function pulseNode(nodeId) {
+  const group = nodeG.selectAll('.node').filter(d => d.id===nodeId);
+  if (group.empty()) return;
+  const n = nodeById[nodeId];
+  const r = rOf(n);
+
+  // Append animated rings, remove after animation
+  [0, 350, 700].forEach(delay => {
+    group.append('circle')
+      .attr('class','pulse-ring')
+      .attr('r', r)
+      .style('animation-delay', delay+'ms')
+      .on('animationend', function(){ d3.select(this).remove(); });
+  });
+}
+
+function resetView() {
+  measureGraph();
+  svgSel.transition().duration(620).call(
+    zoomBeh.transform,
+    d3.zoomIdentity.translate(graphW/2, graphH/2).scale(0.62).translate(-graphW/2, -graphH/2)
+  );
+}
+
+// ── Tooltip ────────────────────────────────────────────────────────────────
+
+function showTip(ev, d) {
+  const tt = document.getElementById('tooltip');
+  const auth = document.getElementById('tt-author');
+  auth.textContent = d.author;
+  auth.style.color = AUTHOR_COLORS[d.author]||'#888';
+  document.getElementById('tt-id').textContent = d.id;
+  const ec = (edgesByNode[d.id]||[]).length;
+  document.getElementById('tt-ec').textContent = `${ec} connection${ec!==1?'s':''}`;
+  document.getElementById('tt-text').textContent = d.text.slice(0,125) + (d.text.length>125?'…':'');
+  tt.classList.add('show');
+  moveTip(ev);
+}
+
+function moveTip(ev) {
+  const tt = document.getElementById('tooltip');
+  const W=window.innerWidth, H=window.innerHeight, tw=272, th=130;
+  let x=ev.clientX+14, y=ev.clientY+14;
+  if (x+tw>W-8) x=ev.clientX-tw-14;
+  if (y+th>H-8) y=ev.clientY-th-14;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+}
+
+function hideTip() { document.getElementById('tooltip').classList.remove('show'); }
+
+// ── Author Legend ──────────────────────────────────────────────────────────
+
+function buildLegend() {
+  const el = document.getElementById('author-legend');
+  const h  = document.createElement('div');
+  h.className='leg-title'; h.textContent='Authors';
+  el.appendChild(h);
+  Object.entries(AUTHOR_COLORS).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([auth,color])=>{
+    const row = document.createElement('div');
+    row.className='leg-row';
+    row.innerHTML=`<span class="leg-dot" style="background:${color}"></span>${auth}`;
+    // Click legend row → set author filter
+    row.addEventListener('click', ()=>{
+      const sel = document.getElementById('f-author');
+      sel.value = sel.value===auth ? '' : auth;
+      F.author = sel.value;
+      // Open filter bar if closed
+      document.getElementById('filter-bar').classList.add('open');
+      document.getElementById('filter-toggle').classList.add('active');
+      applyFilters();
+    });
+    el.appendChild(row);
+  });
+}
+
+// ── Browse ─────────────────────────────────────────────────────────────────
+
+function renderBrowse(visNodes) {
+  document.getElementById('b-count').textContent =
+    `${visNodes.length} of ${ALL_NODES.length} nodes`;
+
+  document.getElementById('b-grid').innerHTML = visNodes.map(n => {
+    const color = AUTHOR_COLORS[n.author]||'#888';
+    const domT = (n.domains||[]).map(d=>`<span class="btag domain">${d}</span>`).join('');
+    const emT  = (n.emotional_registers||[]).map(e=>`<span class="btag emotion">${e}</span>`).join('');
+    const stT  = (n.life_stages||[]).map(s=>`<span class="btag stage">${s}</span>`).join('');
+    const epT  = n.epistemic_status
+      ? `<span class="btag ep">${n.epistemic_status.replace(/_/g,' ')}</span>` : '';
+    const highlighted = n.id===selectedNodeId ? ' highlighted' : '';
+
+    return `<div class="card${highlighted}" data-id="${n.id}"
+              style="border-left:3px solid ${color}22;"
+              onclick="cardClicked('${n.id}')">
+      <div class="card-id">${n.id}</div>
+      <div class="card-top">
+        <span class="card-author" style="color:${color}">${n.author}</span>
+        <span class="card-source">${n.source}</span>
+      </div>
+      <div class="card-text">${n.text}</div>
+      <div class="card-tags">${epT}${domT}${emT}${stT}</div>
+      ${n.notes?`<div class="card-notes">${n.notes}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function cardClicked(nodeId) {
+  // Highlight selected card, deselect others
+  document.querySelectorAll('.card.highlighted').forEach(c => c.classList.remove('highlighted'));
+  const card = document.querySelector(`.card[data-id="${nodeId}"]`);
+  if (card) card.classList.add('highlighted');
+
+  selectedNodeId = nodeId;   // keep selection in sync
+  pendingNodeId  = nodeId;   // queued for graph tab
+
+  // Show a small hint in the card that the graph will highlight it
+  // (nothing else needed — tab switch handler picks up pendingNodeId)
+}
+</script>
+</body>
+</html>
