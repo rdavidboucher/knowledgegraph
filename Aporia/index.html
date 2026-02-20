@@ -155,13 +155,14 @@
     .clear-btn:hover { color: var(--c-contradicts); border-color: var(--c-contradicts); }
 
     /* ── VIEWS ─────────────────────────────────────────────────────── */
-    .views { flex: 1; overflow: hidden; position: relative; }
+    .views { flex: 1; overflow: hidden; position: relative; min-height: 0; }
     .tab-panel { position: absolute; inset: 0; display: none; }
-    .tab-panel.active { display: flex; }
+    .tab-panel.active { display: flex; flex-direction: column; }
 
     /* ── GRAPH TAB ─────────────────────────────────────────────────── */
-    #tab-graph { position: relative; }
-    #graph-svg { width: 100%; height: 100%; cursor: grab; }
+    /* #tab-graph fills .tab-panel via flex; SVG fills #tab-graph via absolute */
+    #tab-graph { position: relative; flex: 1; min-height: 0; }
+    #graph-svg { position: absolute; inset: 0; cursor: grab; }
     #graph-svg:active { cursor: grabbing; }
 
     #graph-badge {
@@ -811,12 +812,13 @@ function setupTabs() {
 // ── Graph ──────────────────────────────────────────────────────────────────
 
 function measureGraph() {
-  // Measure the SVG's true rendered size. Falls back to viewport minus header
-  // (50px) if the element reports zero because the tab is display:none at boot.
-  const svg = document.getElementById('graph-svg');
-  const rect = svg.getBoundingClientRect();
-  graphW = rect.width  || svg.clientWidth  || window.innerWidth;
-  graphH = rect.height || svg.clientHeight || (window.innerHeight - 50);
+  // Measure the .views container (flex:1 in the app column).
+  // This is always visible and has a reliable computed height.
+  // The SVG is position:absolute;inset:0 inside #tab-graph which is flex:1
+  // inside .tab-panel, so .views dimensions === SVG dimensions.
+  const views = document.querySelector('.views');
+  graphW = views.offsetWidth  || window.innerWidth;
+  graphH = views.offsetHeight || (window.innerHeight - 50);
 }
 
 function setupGraph() {
