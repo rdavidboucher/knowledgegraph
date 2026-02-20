@@ -507,6 +507,188 @@
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* ── ABOUT TAB ─────────────────────────────────────────────────── */
+    #tab-about { overflow-y: auto; background: var(--bg); }
+
+    .about-scroll { min-height: 100%; }
+
+    .about-body {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 4rem 2.5rem 5rem;
+    }
+
+    /* Hero */
+    .about-hero {
+      text-align: center;
+      padding: 3rem 0 4rem;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4rem;
+    }
+
+    .about-hero-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.3em;
+      color: var(--amber-lo);
+      margin-bottom: 1.5rem;
+    }
+
+    .about-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 300;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      margin-bottom: 1.5rem;
+    }
+
+    .about-subtitle {
+      font-family: 'Lora', serif;
+      font-size: 1rem;
+      color: var(--muted);
+      line-height: 1.65;
+      font-style: italic;
+    }
+
+    /* Sections */
+    .about-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 3.5rem;
+    }
+
+    .about-section {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 0 2.5rem;
+      padding-bottom: 3.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .about-section:last-child { border-bottom: none; }
+
+    .about-section-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--amber);
+      padding-top: 0.35rem;
+      position: sticky;
+      top: 1rem;
+      align-self: start;
+    }
+
+    .about-section-content p {
+      font-family: 'Lora', serif;
+      font-size: 0.95rem;
+      line-height: 1.8;
+      color: #c8c2b8;
+      margin-bottom: 1.2rem;
+    }
+
+    .about-section-content p:last-child { margin-bottom: 0; }
+
+    .about-section-content p em {
+      font-style: italic;
+      color: var(--text);
+    }
+
+    .about-section-content p strong {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .about-list {
+      font-family: 'Lora', serif;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: #c8c2b8;
+      padding-left: 1.2rem;
+      margin: 0.8rem 0 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .about-list li { list-style: none; padding-left: 0.8rem; position: relative; }
+    .about-list li::before {
+      content: '—';
+      position: absolute;
+      left: -0.8rem;
+      color: var(--amber-lo);
+    }
+
+    /* Corpus grid */
+    .corpus-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 0.6rem 2rem;
+    }
+
+    .corpus-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.05rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .corpus-author {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .corpus-title {
+      font-family: 'Lora', serif;
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    /* Footer */
+    .about-footer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding-top: 4rem;
+      text-align: center;
+    }
+
+    .about-footer-mark {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.1rem;
+      letter-spacing: 0.25em;
+      color: var(--amber);
+      opacity: 0.5;
+    }
+
+    .about-footer-sub {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.06em;
+      color: #383950;
+    }
+
+    /* Mobile about adjustments */
+    @media (max-width: 640px) {
+      .about-body { padding: 2.5rem 1.1rem 4rem; }
+      .about-hero { padding: 2rem 0 2.5rem; margin-bottom: 2.5rem; }
+      .about-section {
+        grid-template-columns: 1fr;
+        gap: 0.6rem 0;
+      }
+      .about-section-label {
+        position: static;
+        margin-bottom: 0.4rem;
+      }
+      .corpus-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -533,6 +715,7 @@
       <nav class="tabs">
         <button class="tab-btn active" data-tab="graph">Graph</button>
         <button class="tab-btn" data-tab="browse">Browse</button>
+        <button class="tab-btn" data-tab="about">About</button>
       </nav>
     </div>
   </header>
@@ -614,6 +797,101 @@
       <div class="browse-main">
         <div class="b-count" id="b-count"></div>
         <div class="cards-grid" id="b-grid"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-about">
+      <div class="about-scroll">
+        <div class="about-body">
+
+          <div class="about-hero">
+            <div class="about-hero-label">A P O R I A</div>
+            <h1 class="about-title">Mapping the Fault Lines<br>of Human Thought</h1>
+            <p class="about-subtitle">477 ideas. 19 thinkers. 2,500 years.<br>One question: where do they agree, collide, and talk past each other?</p>
+          </div>
+
+          <div class="about-grid">
+
+            <section class="about-section">
+              <div class="about-section-label">Rationale</div>
+              <div class="about-section-content">
+                <p>Philosophy is almost always encountered one book at a time. You read Marcus Aurelius, then you read Viktor Frankl, and somewhere you notice that two men separated by eighteen centuries — a Roman emperor and a Viennese psychiatrist who survived the camps — arrived at nearly identical conclusions about the relationship between suffering and human dignity. The structure of reality forced them to the same place. But that convergence is invisible if you never put the books next to each other.</p>
+                <p>The same is true of contradiction. Aristotle argues that the good life requires external goods — friendship, health, a measure of fortune. The Stoics argue it requires precisely nothing external. Both positions are rigorously argued. Both have serious adherents. The disagreement is not resolvable by reading either thinker more carefully; it is a genuine fault line in how one conceives of human flourishing. That kind of irreconcilable tension is philosophically important, and it tends to get lost when ideas are kept in separate silos.</p>
+                <p>Aporia is built on the premise that the <em>relationships between ideas</em> matter as much as the ideas themselves. A map of convergences, contradictions, and structural echoes across traditions is a different kind of philosophical object than any single text.</p>
+              </div>
+            </section>
+
+            <section class="about-section">
+              <div class="about-section-label">Goal</div>
+              <div class="about-section-content">
+                <p>The project has a simple aim: make the conceptual terrain of a curated body of philosophical and reflective writing navigable as a network rather than as a shelf of books.</p>
+                <p>Not to resolve debates — the contradictions are left standing, which is philosophically honest — but to make them visible and explorable. To let someone who is thinking about mortality see, at a glance, how Montaigne's rehearsal-through-contemplation, Gawande's argument for honest medicine, Becker's terror management, and the Gita's dissolution of the self-that-fears-death each occupy different positions on the same terrain. To let someone interested in political obligation trace how Adam Smith, Aristotle, and Thoreau triangulate the question of what we owe society.</p>
+                <p>The name is deliberate. In ancient Greek philosophy, an <em>aporia</em> is an impasse — a genuine puzzle that resists resolution. Socrates used the term for the state of productive confusion that precedes real understanding. This project lives in that space.</p>
+              </div>
+            </section>
+
+            <section class="about-section">
+              <div class="about-section-label">Methodology</div>
+              <div class="about-section-content">
+                <p>The corpus spans 19 works across philosophy, theology, natural history, literature, and medicine, selected for their depth of engagement with questions about how to live, how to understand the human condition, and how to face mortality. The full list runs from Aristotle's <em>Nicomachean Ethics</em> to Atul Gawande's <em>Being Mortal</em>, with stops at Pascal, Laozi, the Bhagavad Gita, Dostoevsky, Nietzsche, Kierkegaard, Simone Weil, Montaigne, Boethius, Thoreau, Darwin, Marcus Aurelius, Camus, Bill Bryson, Ernest Becker, and Viktor Frankl.</p>
+                <p>Each text was read for its <strong>nodes</strong> — discrete, self-contained claims or insights that can stand independently and enter into relationships with claims from other texts. 477 nodes were extracted and tagged across four dimensions:</p>
+                <ul class="about-list">
+                  <li><strong>Domain</strong> — the philosophical territory the idea inhabits (ethics, metaphysics, epistemology, political philosophy, philosophy of mind, theology, and others)</li>
+                  <li><strong>Emotional register</strong> — the affective tone of the idea (confrontational, consoling, subversive, meditative, and so on)</li>
+                  <li><strong>Life stage</strong> — which phase of human experience the idea most directly addresses (youth, mid-life, old age, mortality, crisis)</li>
+                  <li><strong>Epistemic status</strong> — whether the claim is presented as demonstrative argument, testimony, speculation, or paradox</li>
+                </ul>
+                <p>442 edges were then drawn between nodes, classified into five relationship types: <strong>contradicts</strong> (irreconcilable positions), <strong>converges</strong> (independent traditions reaching the same conclusion), <strong>mirrors</strong> (structural parallels without causal connection), <strong>extends</strong> (one idea building on another), and <strong>undermines</strong> (one idea removing the foundation of another). Each edge carries a weight from 1 to 3 indicating the strength of the relationship.</p>
+                <p>The graph is entirely hand-curated. Every node was extracted by a reader; every edge is an editorial judgment. This is a feature, not a limitation — the goal is a map shaped by interpretive intelligence, not pattern-matching.</p>
+              </div>
+            </section>
+
+            <section class="about-section">
+              <div class="about-section-label">Applications</div>
+              <div class="about-section-content">
+                <p>The graph is designed to reward multiple kinds of use.</p>
+                <p><strong>As a reading companion.</strong> If you've just finished <em>Man's Search for Meaning</em> and want to know what else in the corpus speaks to Frankl's claims — whether agreeing, disagreeing, or asking a related question from a different angle — the graph surfaces that immediately. The detail panel for any node lists every connection with its type and weight.</p>
+                <p><strong>As a study tool.</strong> Filtering by domain reduces the graph to the nodes relevant to, say, political philosophy or the philosophy of mind. Filtering by author shows you where a single thinker's ideas are densest and most connected to the broader network. Filtering by emotional register lets you read across the corpus by tone rather than by tradition.</p>
+                <p><strong>As a map of disagreement.</strong> Setting the filter to show only <em>contradicts</em> edges at weight 3 — the strongest irreconcilable tensions — reveals the deep fault lines: where serious thinkers have looked at the same question and arrived at genuinely incompatible answers. These are philosophically the most interesting nodes in the graph.</p>
+                <p><strong>As a personal tool.</strong> Filtering by life stage lets you ask: what has serious thought had to say about grief, about mid-life, about the approach of death? The answer cuts across traditions, centuries, and registers in ways that a bibliography cannot.</p>
+              </div>
+            </section>
+
+            <section class="about-section about-section--corpus">
+              <div class="about-section-label">Corpus</div>
+              <div class="about-section-content">
+                <div class="corpus-grid">
+                  <div class="corpus-item"><span class="corpus-author">Aristotle</span><span class="corpus-title">Nicomachean Ethics</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Blaise Pascal</span><span class="corpus-title">Pensées</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Laozi</span><span class="corpus-title">Tao Te Ching</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Vyasa (trad.)</span><span class="corpus-title">Bhagavad Gita</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Fyodor Dostoevsky</span><span class="corpus-title">The Brothers Karamazov</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Friedrich Nietzsche</span><span class="corpus-title">Thus Spoke Zarathustra</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Soren Kierkegaard</span><span class="corpus-title">The Sickness Unto Death</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Simone Weil</span><span class="corpus-title">Waiting for God</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Michel de Montaigne</span><span class="corpus-title">Essays</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Boethius</span><span class="corpus-title">The Consolation of Philosophy</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Henry Thoreau</span><span class="corpus-title">Walden</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Charles Darwin</span><span class="corpus-title">The Descent of Man</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Marcus Aurelius</span><span class="corpus-title">Meditations</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Albert Camus</span><span class="corpus-title">The Myth of Sisyphus</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Bill Bryson</span><span class="corpus-title">A Short History of Nearly Everything</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Ernest Becker</span><span class="corpus-title">The Denial of Death</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Viktor Frankl</span><span class="corpus-title">Man's Search for Meaning</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Adam Smith</span><span class="corpus-title">The Theory of Moral Sentiments</span></div>
+                  <div class="corpus-item"><span class="corpus-author">Atul Gawande</span><span class="corpus-title">Being Mortal</span></div>
+                </div>
+              </div>
+            </section>
+
+          </div>
+
+          <footer class="about-footer">
+            <span class="about-footer-mark">APORIA</span>
+            <span class="about-footer-sub">477 nodes · 442 edges · 5 relationship types · 19 thinkers · 2,500 years</span>
+          </footer>
+
+        </div>
       </div>
     </div>
 
@@ -926,6 +1204,14 @@ function setupTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+      // Hide filters and close filter bar on About tab; restore on Graph/Browse
+      const isAbout = btn.dataset.tab === 'about';
+      document.getElementById('filter-toggle').style.display = isAbout ? 'none' : '';
+      if (isAbout) {
+        document.getElementById('filter-bar').classList.remove('open');
+        document.getElementById('filter-toggle').classList.remove('active');
+      }
 
       if (btn.dataset.tab === 'graph' && pendingNodeId) {
         const nid = pendingNodeId;
