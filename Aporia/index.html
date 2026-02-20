@@ -179,6 +179,8 @@
     #graph-svg {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
+      width: 100%; /* Explicitly define size for D3 */
+      height: 100%;
       display: block;
       cursor: grab;
     }
@@ -471,7 +473,6 @@
 
   <div id="filter-bar">
     <div class="filter-inner">
-      <!-- Row 1: text / attribute selects -->
       <div class="filter-row">
         <div class="fg wide">
           <label class="fg-label">Search</label>
@@ -498,7 +499,6 @@
           <select class="fg-select" id="f-epistemic"><option value="">All</option></select>
         </div>
       </div>
-      <!-- Row 2: edge types / weight / clear -->
       <div class="filter-row">
         <span class="fg-label" style="align-self:center; white-space:nowrap;">Edge types</span>
         <div class="edge-pills" id="edge-pills"></div>
@@ -512,8 +512,7 @@
     </div>
   </div>
 
-  <!-- GRAPH -->
-    <div class="tab-panel active" id="tab-graph">
+  <div class="tab-panel active" id="tab-graph">
       <svg id="graph-svg"></svg>
       <div id="graph-badge"></div>
       <div class="g-bottom">
@@ -540,7 +539,6 @@
       </div>
     </div>
 
-    <!-- BROWSE -->
     <div class="tab-panel" id="tab-browse">
       <div class="browse-main">
         <div class="b-count" id="b-count"></div>
@@ -550,7 +548,6 @@
 
 </div>
 
-<!-- TOOLTIP -->
 <div id="tooltip">
   <div class="tt-box">
     <div class="tt-author" id="tt-author"></div>
@@ -641,7 +638,7 @@ Promise.all([
   });
 
   document.getElementById('loading').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.display = 'block';
 
   document.querySelector('#s-nodes b').textContent    = ALL_NODES.length;
   document.querySelector('#s-edges b').textContent    = ALL_EDGES.length;
@@ -821,20 +818,24 @@ function setupTabs() {
 // ── Graph ──────────────────────────────────────────────────────────────────
 
 function measureGraph() {
-  // #tab-graph is position:fixed, top:50px, left:0, right:0, bottom:0
-  // so its dimensions are always window.innerWidth × (window.innerHeight - 50).
-  // Reading these directly is the only 100% reliable approach.
-  graphW = window.innerWidth;
-  graphH = window.innerHeight - 50;
+  const container = document.getElementById('tab-graph');
+  // Grab dimensions robustly, with safe fallbacks
+  graphW = container.clientWidth || window.innerWidth || 800;
+  graphH = container.clientHeight || (window.innerHeight - 50) || 600;
 }
 
 function setupGraph() {
-  svgSel = d3.select('#graph-svg');
+  // Always call measureGraph first to set coordinates
+  measureGraph();
+
+  svgSel = d3.select('#graph-svg')
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("viewBox", `0 0 ${graphW} ${graphH}`); // Make SVG responsive
+
   const root = svgSel.append('g').attr('id', 'g-root');
   linkG = root.append('g');
   nodeG = root.append('g');
-
-  measureGraph();
 
   zoomBeh = d3.zoom().scaleExtent([0.04, 6]).on('zoom', e => {
     root.attr('transform', e.transform);
@@ -870,6 +871,7 @@ function setupGraph() {
     const prevW = graphW, prevH = graphH;
     measureGraph();
     if (graphW !== prevW || graphH !== prevH) {
+      svgSel.attr("viewBox", `0 0 ${graphW} ${graphH}`);
       simulation.force('center', d3.forceCenter(graphW/2, graphH/2).strength(0.06));
       simulation.alpha(0.15).restart();
     }
