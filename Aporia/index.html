@@ -32,16 +32,20 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── APP SHELL ─────────────────────────────────────────────────── */
-    #app { display: flex; flex-direction: column; height: 100vh; }
+    /* ── FIXED SHELL ───────────────────────────────────────────────── */
+    /* Everything is position:fixed so layout never depends on flex
+       parent resolution. Header = 50px. Filter bar overlays the top
+       of the content area when open. --fb is the current filter-bar
+       height, updated by JS so browse can offset its top. */
 
     /* ── HEADER ────────────────────────────────────────────────────── */
     header {
-      flex-shrink: 0;
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 50px; z-index: 30;
       display: flex; align-items: center; gap: 1.5rem;
-      padding: 0 1.5rem; height: 50px;
+      padding: 0 1.5rem;
       border-bottom: 1px solid var(--border);
-      background: var(--surface); z-index: 20;
+      background: var(--surface);
     }
     .site-title {
       font-family: 'Cormorant Garamond', serif;
@@ -93,10 +97,11 @@
 
     /* ── FILTER BAR ────────────────────────────────────────────────── */
     #filter-bar {
-      flex-shrink: 0; overflow: hidden;
+      position: fixed; top: 50px; left: 0; right: 0;
+      overflow: hidden;
       max-height: 0; transition: max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1);
       background: var(--surface);
-      border-bottom: 1px solid transparent; z-index: 15;
+      border-bottom: 1px solid transparent; z-index: 20;
     }
     #filter-bar.open { max-height: 170px; border-bottom-color: var(--border); }
 
@@ -154,15 +159,25 @@
     }
     .clear-btn:hover { color: var(--c-contradicts); border-color: var(--c-contradicts); }
 
-    /* ── VIEWS ─────────────────────────────────────────────────────── */
-    .views { flex: 1; overflow: hidden; position: relative; min-height: 0; }
-    .tab-panel { position: absolute; inset: 0; display: none; }
-    .tab-panel.active { display: flex; flex-direction: column; }
+    /* ── CONTENT PANELS ───────────────────────────────────────────── */
+    /* Both panels are position:fixed, top:50px, filling the remaining
+       viewport. This is the only reliable way to get full-height D3
+       without flex resolution issues. display:none/block toggled by JS. */
+    .tab-panel {
+      position: fixed;
+      top: 50px; left: 0; right: 0; bottom: 0;
+      display: none;
+    }
+    .tab-panel.active { display: block; }
 
     /* ── GRAPH TAB ─────────────────────────────────────────────────── */
-    /* #tab-graph fills .tab-panel via flex; SVG fills #tab-graph via absolute */
-    #tab-graph { position: relative; flex: 1; min-height: 0; }
-    #graph-svg { position: absolute; inset: 0; cursor: grab; }
+    #tab-graph { position: relative; }
+    #graph-svg {
+      /* Fills the fixed panel exactly — dimensions match window minus header */
+      width: 100%; height: 100%;
+      display: block;
+      cursor: grab;
+    }
     #graph-svg:active { cursor: grabbing; }
 
     #graph-badge {
@@ -346,8 +361,8 @@
     }
 
     /* ── BROWSE ────────────────────────────────────────────────────── */
-    #tab-browse { flex-direction: column; }
-    .browse-main { flex: 1; overflow-y: auto; padding: 1.2rem 1.5rem; }
+    #tab-browse { overflow-y: auto; }
+    .browse-main { padding: 1.2rem 1.5rem; }
     .b-count {
       font-family: 'DM Mono', monospace; font-size: 0.63rem;
       color: var(--muted); margin-bottom: 1rem;
@@ -493,9 +508,7 @@
     </div>
   </div>
 
-  <div class="views">
-
-    <!-- GRAPH -->
+  <!-- GRAPH -->
     <div class="tab-panel active" id="tab-graph">
       <svg id="graph-svg"></svg>
       <div id="graph-badge"></div>
@@ -531,7 +544,6 @@
       </div>
     </div>
 
-  </div>
 </div>
 
 <!-- TOOLTIP -->
@@ -635,14 +647,7 @@ Promise.all([
   setupTabs();
   setupGraph();
   buildLegend();
-
-  // Defer the first render by one animation frame so the browser has
-  // completed flex layout and the SVG has its true dimensions.
-  requestAnimationFrame(() => {
-    measureGraph();
-    simulation.force('center', d3.forceCenter(graphW/2, graphH/2).strength(0.06));
-    applyFilters();
-  });
+  applyFilters();
 
 }).catch(() => {
   document.querySelector('#loading .l-sub').innerHTML =
@@ -812,13 +817,11 @@ function setupTabs() {
 // ── Graph ──────────────────────────────────────────────────────────────────
 
 function measureGraph() {
-  // Measure the .views container (flex:1 in the app column).
-  // This is always visible and has a reliable computed height.
-  // The SVG is position:absolute;inset:0 inside #tab-graph which is flex:1
-  // inside .tab-panel, so .views dimensions === SVG dimensions.
-  const views = document.querySelector('.views');
-  graphW = views.offsetWidth  || window.innerWidth;
-  graphH = views.offsetHeight || (window.innerHeight - 50);
+  // #tab-graph is position:fixed, top:50px, left:0, right:0, bottom:0
+  // so its dimensions are always window.innerWidth × (window.innerHeight - 50).
+  // Reading these directly is the only 100% reliable approach.
+  graphW = window.innerWidth;
+  graphH = window.innerHeight - 50;
 }
 
 function setupGraph() {
@@ -858,8 +861,8 @@ function setupGraph() {
     document.getElementById('author-legend').classList.toggle('open');
   });
 
-  // Keep dimensions live on resize — re-center the simulation.
-  const ro = new ResizeObserver(() => {
+  // Re-center on window resize.
+  window.addEventListener('resize', () => {
     const prevW = graphW, prevH = graphH;
     measureGraph();
     if (graphW !== prevW || graphH !== prevH) {
@@ -867,7 +870,6 @@ function setupGraph() {
       simulation.alpha(0.15).restart();
     }
   });
-  ro.observe(document.getElementById('graph-svg'));
 }
 
 const rOf = d => 3.2 + Math.sqrt(d._deg||0) * 1.25;
