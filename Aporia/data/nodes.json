@@ -6768,25 +6768,25 @@
     "notes": "Converges with Boethius on evil as privation; contradicts Dostoevsky on evil as positive force."
   },
   {
+    {
     "id": "bg_032",
     "author": "Vyasa (trad.)",
     "source": "Bhagavad Gita",
-    "text": "The Gita was composed in a specific historical context that included the caste system. The text's elevation of different dharmas for different castes has been used to justify hereditary hierarchy. This cannot be separated from the text and must be named.",
+    "text": "The Gita’s concept of swadharma (one's own duty) has been historically utilized to justify and calcify the caste hierarchy (varna), presenting social station as an inescapable metaphysical assignment. While later interpretations emphasize duty as internal psychological alignment, the text's role in historical social stratification remains a significant ethical caveat.",
     "domains": [
       "political_philosophy",
       "ethics",
-      "epistemology"
+      "history"
     ],
     "emotional_registers": [
       "confronting",
-      "unsettling",
-      "clarifying"
+      "unsettling"
     ],
     "life_stages": [
       "universal"
     ],
-    "epistemic_status": "empirically_supported",
-    "notes": "Caveat node. The historical use of Gita teachings to justify caste hierarchy is documented. Requires explicit flagging in graph metadata."
+    "epistemic_status": "experiential",
+    "notes": "Meta-caveat node mirroring Darwin cd_025 on the use of frameworks to reinforce contemporary social prejudices."
   },
   {
     "id": "mm_001",
@@ -10344,21 +10344,20 @@
     "id": "as_025",
     "author": "Adam Smith",
     "source": "The Theory of Moral Sentiments",
-    "text": "There is a well-documented tension between the Adam Smith of the Theory of Moral Sentiments and the Adam Smith of the Wealth of Nations. The first builds moral philosophy on sympathy and the impartial spectator. The second builds political economy on self-interest and the invisible hand. Whether these can be reconciled — the Adam Smith problem — remains genuinely contested.",
+    "text": "The 'Adam Smith Problem' suggests a tension between the sympathy of the Theory of Moral Sentiments and the self-interest of the Wealth of Nations. However, modern interpretation identifies them as integrated: markets require a foundation of mutual sympathy and the 'impartial spectator' to function without collapsing into fraud or violence. Self-interest is an engine, but sympathy is the track.",
     "domains": [
-      "epistemology",
       "political_philosophy",
-      "ethics"
+      "ethics",
+      "economics"
     ],
     "emotional_registers": [
       "clarifying",
-      "humbling",
-      "unsettling"
+      "humbling"
     ],
     "life_stages": [
       "universal"
     ],
     "epistemic_status": "philosophically_argued",
-    "notes": "Third caveat node in the graph alongside Darwin cd_025. Mirrors Darwin cd_024 on intellectual honesty about the limits of one's own framework."
-  }
+    "notes": "Integrates the moral foundation of sympathy (as_001) with the economic engine of interest (as_018) as a single coherent system."
+  },
 ]

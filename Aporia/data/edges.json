@@ -827,6 +827,24 @@
     "label": "Ordinary virtues over heroic vs. virtue unwitnessed same as witnessed",
     "notes": "Marcus Aurelius: do the right thing without needing anyone to notice. Virtue needs no audience. Smith: the virtues he most admires are not the heroic but the ordinary — prudence, justice, beneficence toward those in one's community, and the self-command that allows the others to function. Both are making the same move: against the glorification of the spectacular and in favour of the consistent, unobserved, ordinary exercise of character."
   },
+{
+    "id": "em_046",
+    "source": "eb_003",
+    "target": "bb_003",
+    "type": "mirrors",
+    "weight": 3,
+    "label": "The Meat Mirror: Existential dread vs Secular wonder",
+    "notes": "Both insist on the radical materiality of the human. Becker identifies the body as an 'embarrassment of meat,' leading to dread. Bryson identifies bodies as 'borrowed atoms from stars,' leading to wonder. Same data point, opposite affective response."
+  },
+{
+    "id": "em_047",
+    "source": "bg_032",
+    "target": "cd_025",
+    "type": "converges",
+    "weight": 3,
+    "label": "The Meta-Caveat: Social calcification of truth",
+    "notes": "Identifies how both spiritual (Gita) and scientific (Darwin) frameworks can be used to calcify contemporary social prejudices (caste and racial hierarchy) into 'Eternal Truths' or 'Natural Laws.'"
+  },
   {
     "id": "ev_001",
     "source": "sw_003",
@@ -1321,6 +1339,24 @@
     "weight": 2,
     "label": "Justice requires attention converges with equity as correction of law's generality",
     "notes": "Aristotle: equity is the correction of law's necessary generality by attention to the specific case — the highest form of justice sees particular persons, not only general categories. Weil: justice requires not just absence of cruelty but the positive act of attention — asking of another what they are going through. Both insisting that genuine justice requires a quality of attention to particulars that systematic rules cannot provide."
+  },
+{
+    "id": "ev_056",
+    "source": "eb_021",
+    "target": "ma_012",
+    "type": "converges",
+    "weight": 2,
+    "label": "Chosen engagement as functional remedy",
+    "notes": "Adds nuance to ec_040. While they disagree on the diagnosis of anxiety, they converge on the remedy. Becker’s 'creative illusion' — a chosen engagement despite known mortality — is functionally almost identical to the Stoic 'governing faculty' choosing how to respond to an indifferent universe."
+  },
+{
+    "id": "ev_057",
+    "source": "lz_004",
+    "target": "ar_011",
+    "type": "converges",
+    "weight": 2,
+    "label": "Non-formulaic situational wisdom",
+    "notes": "Nuance to eu_001. While Taoism undermines Aristotle's metaphysics, it converges with his ethics of phronesis (ar_011). Both Wu Wei and practical wisdom describe a non-formulaic, situational intelligence that cannot be reduced to rules."
   },
   {
     "id": "eu_001",
@@ -3976,5 +4012,14 @@
     "weight": 2,
     "label": "Not determined by conditions converges with last human freedom",
     "notes": "vf_016 is the general philosophical claim behind the specific experiential claim of vf_005: the capacity to transcend conditions is what makes you human — and the last freedom of attitude is its most extreme demonstration."
+  },
+{
+    "id": "ei_001",
+    "source": "as_025",
+    "target": "as_001",
+    "type": "extends",
+    "weight": 3,
+    "label": "Economic engine requires moral foundation",
+    "notes": "Reframes the Adam Smith Problem from a 'tension' to an integral dependency: the fellowship of feeling (as_001) is the necessary condition for a non-destructive market economy (as_018)."
   }
 ]
