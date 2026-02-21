@@ -137,9 +137,6 @@
       transition: opacity 0.15s; white-space: nowrap;
     }
     .epill.off { opacity: 0.28; color: var(--muted); }
-    /* Cluster pills: highlighted when SELECTED (inverse of edge pills) */
-    .epill[data-cluster] { opacity: 0.38; }
-    .epill[data-cluster].active-cluster { opacity: 1; border-color: currentColor; }
     .epill-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     .epill-ct { font-size: 0.55rem; color: var(--muted); }
 
@@ -756,10 +753,6 @@
           <div class="ms-chips" id="chips-epistemic"></div>
         </div>
       </div>
-      <div class="filter-row" id="cluster-row">
-        <span class="fg-label" style="align-self:center; white-space:nowrap;">Cluster</span>
-        <div class="cluster-pills" id="cluster-pills"></div>
-      </div>
       <div class="filter-row">
         <span class="fg-label" style="align-self:center; white-space:nowrap;">Edge types</span>
         <div class="edge-pills" id="edge-pills"></div>
@@ -959,7 +952,6 @@ let nodeById  = {}, edgesByNode = {};
 const F = {
   search:    '',
   authors:   new Set(),
-  clusters:  new Set(),
   domains:   new Set(),
   emotions:  new Set(),
   stages:    new Set(),
@@ -967,8 +959,6 @@ const F = {
   edgeTypes: new Set(EDGE_TYPES),
   minWeight: 1,
 };
-
-const CLUSTERS = ['Self', 'World', 'Together', 'Limit'];
 
 let selectedNodeId  = null;   // node currently focused (shared)
 let pendingNodeId   = null;   // set by browse click, consumed on graph tab open
@@ -1094,24 +1084,6 @@ function setupFilterBar() {
   setupMultiSelect('f-stage',    'stages',    'chips-stage');
   setupMultiSelect('f-epistemic','epistemics','chips-epistemic');
 
-  // Cluster pills (fixed set — no dropdown needed)
-  const clusterColors = { Self:'#9B7EC8', World:'#4e9ebc', Together:'#52b788', Limit:'#e05252' };
-  const pillsEl = document.getElementById('cluster-pills');
-  CLUSTERS.forEach(cl => {
-    const counts = ALL_NODES.filter(n => n.cluster === cl).length;
-    const btn = document.createElement('button');
-    btn.className = 'epill'; btn.dataset.cluster = cl;
-    btn.innerHTML = `<span class="epill-dot" style="background:${clusterColors[cl]}"></span>`
-                  + `${cl} <span class="epill-ct">${counts}</span>`;
-    btn.addEventListener('click', () => {
-      if (F.clusters.has(cl)) F.clusters.delete(cl);
-      else F.clusters.add(cl);
-      btn.classList.toggle('active-cluster', F.clusters.has(cl));
-      applyFilters();
-    });
-    pillsEl.appendChild(btn);
-  });
-
   // Search
   document.getElementById('f-search').addEventListener('input', e => {
     F.search = e.target.value.toLowerCase(); applyFilters();
@@ -1157,7 +1129,7 @@ function fillSelect(id, opts) {
 
 function clearFilters() {
   F.search = '';
-  F.authors.clear(); F.clusters.clear(); F.domains.clear(); F.emotions.clear();
+  F.authors.clear(); F.domains.clear(); F.emotions.clear();
   F.stages.clear();  F.epistemics.clear();
   F.edgeTypes = new Set(EDGE_TYPES); F.minWeight = 1;
   document.getElementById('f-search').value = '';
@@ -1169,7 +1141,6 @@ function clearFilters() {
   renderChips('emotions',  'chips-emotion');
   renderChips('stages',    'chips-stage');
   renderChips('epistemics','chips-epistemic');
-  document.querySelectorAll('.epill[data-cluster]').forEach(p => p.classList.remove('active-cluster'));
   document.getElementById('f-weight').value = 1;
   document.getElementById('f-weight-val').textContent = '1';
   document.querySelectorAll('.epill').forEach(p => p.classList.remove('off'));
@@ -1178,7 +1149,7 @@ function clearFilters() {
 
 function countActiveFilters() {
   return (F.search ? 1 : 0)
-    + F.authors.size + F.clusters.size + F.domains.size + F.emotions.size
+    + F.authors.size + F.domains.size + F.emotions.size
     + F.stages.size  + F.epistemics.size
     + (F.edgeTypes.size < EDGE_TYPES.length ? 1 : 0)
     + (F.minWeight > 1 ? 1 : 0);
@@ -1193,7 +1164,6 @@ function nodeMatches(n) {
                && !(n.notes||'').toLowerCase().includes(F.search)) return false;
   // Multi-value filters: OR within category (if set is non-empty, node must match at least one)
   if (F.authors.size   > 0 && !F.authors.has(n.author)) return false;
-  if (F.clusters.size  > 0 && !F.clusters.has(n.cluster)) return false;
   if (F.domains.size   > 0 && !(n.domains||[]).some(d => F.domains.has(d))) return false;
   if (F.emotions.size  > 0 && !(n.emotional_registers||[]).some(e => F.emotions.has(e))) return false;
   if (F.stages.size    > 0 && !(n.life_stages||[]).some(s => F.stages.has(s))) return false;
